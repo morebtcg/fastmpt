@@ -22,51 +22,49 @@ id和数据偏移皆为网络序
 */
 class Record {
 public:
-  Record(Slice &slice, uint32_t valueLength) {
-    if (slice.length() != valueLength + 8) {
+  Record(Slice slice, uint32_t valueLength): m_slice(std::move(slice)) {
+    if (slice.length() != valueLength + HEADER_LENGTH) {
       throw Exception(-1, "Length not match");
     }
-
-    m_space = slice.buffer();
-    m_valueLength = valueLength;
   }
 
-  uint32_t length() { return m_valueLength + 8; }
+  uint32_t length() { return m_slice.length() + 8; }
 
   const Slice value() const {
-    Slice slice(m_space, m_valueLength);
+    Slice slice(m_slice.buffer(), m_slice.length() - 8);
     return slice;
   }
 
   void setValue(const Slice &value) {
-    memcpy(m_space, value.buffer(), value.length());
+    memcpy(m_slice.buffer(), value.buffer(), value.length());
   }
 
-  uint32_t left() { return ntohl(*((uint32_t *)&m_space[m_valueLength])); }
+  uint32_t left() { return ntohl(*((uint32_t *)&m_slice.buffer()[m_slice.length() - 8])); }
 
   void setLeft(uint32_t value) {
-    *((uint32_t *)&m_space[m_valueLength]) = htonl(value);
+    *((uint32_t *)&m_slice.buffer()[m_slice.length() - 8]) = htonl(value);
   }
 
   uint32_t right() {
-    return ntohl(*((uint32_t *)&m_space[m_valueLength + sizeof(uint32_t)]));
+    return ntohl(*((uint32_t *)&m_slice.buffer()[m_slice.length() - 8 + sizeof(uint32_t)]));
   }
 
   void setRight(uint32_t value) {
-    *((uint32_t *)&m_space[m_valueLength + sizeof(uint32_t)]) = htonl(value);
+    *((uint32_t *)&m_slice.buffer()[m_slice.length() - 8 + sizeof(uint32_t)]) = htonl(value);
   }
 
   uint64_t dataOffset() {
-    return ntohll(*((uint64_t *)&m_space[m_valueLength]));
+    return ntohll(*((uint64_t *)&m_slice.buffer()[m_slice.length() - 8]));
   }
 
   void setDataOffset(uint64_t value) {
-    *((uint64_t *)&m_space[m_valueLength]) = htonll(value);
+    *((uint64_t *)&m_slice.buffer()[m_slice.length() - 8]) = htonll(value);
   }
 
 private:
-  std::byte *m_space = nullptr;
-  size_t m_valueLength = 0;
+  Slice m_slice;
+
+  static const size_t HEADER_LENGTH = 8;
 
   uint64_t htonll(uint64_t val) {
     return (((uint64_t)htonl(val)) << 32) + htonl(val >> 32);

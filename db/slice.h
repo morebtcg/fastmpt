@@ -12,15 +12,20 @@ public:
   Slice(std::byte *buffer, size_t length) noexcept
       : m_buffer(buffer), m_length(length) {}
 
+/*
   Slice(const std::string &value) noexcept {
     m_buffer = (std::byte *)value.data();
     m_length = value.size();
   }
+  */
 
+/*
   Slice(const Slice &slice) noexcept {
     m_buffer = slice.m_buffer;
     m_length = slice.m_length;
   }
+  */
+  Slice(const Slice &slice) = delete;
 
   Slice(Slice &&slice) noexcept {
     m_buffer = slice.m_buffer;

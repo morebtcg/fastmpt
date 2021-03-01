@@ -16,38 +16,38 @@ B-Tree节点数据格式：
 */
 class Node {
   public:
-    Node(Slice &slice, uint32_t valueLength, uint32_t nodeLength) {
-        m_space = slice.buffer();
-        m_length = nodeLength;
+    Node(Slice slice, uint32_t valueLength):m_slice(std::move(slice)) {
+      if(slice.length() != valueLength + HEADER_LENGTH) {
+        throw Exception(-1, "Length not match");
+      }
     }
 
     uint16_t recordSize() {
-      return *((uint16_t*)m_space);
+      return *((uint16_t*)m_slice.buffer());
     }
 
     void setRecordSize(uint16_t size) {
-      *((uint16_t*)m_space) = size;
+      *((uint16_t*)m_slice.buffer()) = size;
     }
 
     uint16_t nodeType() {
-      return *((uint16_t*)m_space[2]);
+      return *((uint16_t*)m_slice.buffer()[2]);
     }
 
     void setNodeType(uint16_t type) {
-      *((uint16_t*)m_space[2]) = type;
+      *((uint16_t*)m_slice.buffer()[2]) = type;
     }
 
     uint32_t nextID() {
-      return *((uint32_t*)m_space[4]);
+      return *((uint32_t*)m_slice.buffer()[4]);
     }
 
     void setNextID(uint32_t id) {
-      *((uint32_t*)m_space[4]) = id;
+      *((uint32_t*)m_slice.buffer()[4]) = id;
     }
 
   private:
-    std::byte *m_space = nullptr;
-    size_t m_length = 0;
+    Slice m_slice;
 
     static const size_t HEADER_LENGTH = 8;
   };

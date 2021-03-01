@@ -10,7 +10,7 @@
 namespace sdb {
 class BTree {
 public:
-  virtual Slice find(const Slice &key) { return Slice(""); }
+  virtual const Slice find(const Slice &key) { return Slice((const std::byte*)"Hello world!", 0); }
 
   virtual void insert(const Slice &key, const Slice &value) {}
 

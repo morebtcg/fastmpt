@@ -29,4 +29,10 @@ int main(int argc, char **argv) {
   std::cout << std::endl << "------------------------------" << std::endl << std::endl;
   // Holder holder(std::move(obj));
   Holder holder(obj);
+
+  sdb::BTree btree;
+  sdb::Slice s = btree.find(sdb::Slice((std::byte*)"", 0));
+  sdb::Slice b((std::byte*)"", 0);
+
+  sdb::Slice c = std::move(s);
 }

@@ -1,22 +1,80 @@
 #pragma once
 
+#include "exception.h"
+#include "slice.h"
+#include <arpa/inet.h>
 #include <cstddef>
 #include <cstdint>
-#include "slice.h"
+#include <memory.h>
 
 namespace sdb {
 
+/*
+非叶子节点的记录格式：
+|----------value数据----------|--左节点id--|--右节点id--|
+|---------valueLength---------|---4字节----|---4字节---|
+
+叶子节点的记录格式：
+|----------value数据----------|--------数据偏移--------|
+|---------valueLength---------|---------8字节---------|
+
+id和数据偏移皆为网络序
+*/
 class Record {
 public:
-  Record(Slice &slice)  {
-      m_value = slice.buffer();
-      m_valueLength = slice.length();
+  Record(Slice &slice, uint32_t valueLength) {
+    if (slice.length() != valueLength + 8) {
+      throw Exception(-1, "Length not match");
+    }
+
+    m_space = slice.buffer();
+    m_valueLength = valueLength;
   }
+
   uint32_t length() { return m_valueLength + 8; }
 
+  const Slice value() const {
+    Slice slice(m_space, m_valueLength);
+    return slice;
+  }
+
+  void setValue(const Slice &value) {
+    memcpy(m_space, value.buffer(), value.length());
+  }
+
+  uint32_t left() { return ntohl(*((uint32_t *)&m_space[m_valueLength])); }
+
+  void setLeft(uint32_t value) {
+    *((uint32_t *)&m_space[m_valueLength]) = htonl(value);
+  }
+
+  uint32_t right() {
+    return ntohl(*((uint32_t *)&m_space[m_valueLength + sizeof(uint32_t)]));
+  }
+
+  void setRight(uint32_t value) {
+    *((uint32_t *)&m_space[m_valueLength + sizeof(uint32_t)]) = htonl(value);
+  }
+
+  uint64_t dataOffset() {
+    return ntohll(*((uint64_t *)&m_space[m_valueLength]));
+  }
+
+  void setDataOffset(uint64_t value) {
+    *((uint64_t *)&m_space[m_valueLength]) = htonll(value);
+  }
+
 private:
-  std::byte *m_value;
-  size_t m_valueLength;
+  std::byte *m_space = nullptr;
+  size_t m_valueLength = 0;
+
+  uint64_t htonll(uint64_t val) {
+    return (((uint64_t)htonl(val)) << 32) + htonl(val >> 32);
+  }
+
+  uint64_t ntohll(uint64_t val) {
+    return (((uint64_t)ntohl(val)) << 32) + ntohl(val >> 32);
+  }
 };
 
-}
+} // namespace sdb

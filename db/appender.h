@@ -5,7 +5,8 @@
 namespace sdb {
     class Appender {
         public:
-        void append(const std::byte *buffer, size_t length) {
+        size_t append(const std::byte *buffer, size_t length) {
+            return 0;
         }
     };
 }
